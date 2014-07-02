@@ -49,7 +49,7 @@ module ClosureTree
           if ea.root? || tree.empty? # We're at the top of the tree.
             tree[ea] = h
           else
-            id_to_hash[ea._ct_parent_id][ea] = h
+            id_to_hash[ea._ct_parent_id][ea] = h if id_to_hash[ea._ct_parent_id]
           end
         end
         tree

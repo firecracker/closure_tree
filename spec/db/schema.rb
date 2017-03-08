@@ -7,8 +7,7 @@ ActiveRecord::Schema.define(:version => 0) do
     t.string "title"
     t.integer "parent_id"
     t.integer "sort_order"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.timestamps null: false
   end
 
   add_foreign_key(:tags, :tags, :column => 'parent_id')
@@ -28,8 +27,7 @@ ActiveRecord::Schema.define(:version => 0) do
     t.string "title"
     t.string "parent_uuid"
     t.integer "sort_order"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.timestamps null: false
   end
 
   create_table "uuid_tag_hierarchies", :id => false do |t|
@@ -45,17 +43,39 @@ ActiveRecord::Schema.define(:version => 0) do
   add_index "tag_hierarchies", [:ancestor_id, :descendant_id, :generations], :unique => true, :name => "tag_anc_desc_idx"
   add_index "tag_hierarchies", [:descendant_id], :name => "tag_desc_idx"
 
+  create_table "groups" do |t|
+    t.string "name", null: false
+  end
+
+  create_table "groupings" do |t|
+    t.string "name", null: false
+  end
+
+  create_table "user_sets" do |t|
+    t.string "name", null: false
+  end
+
+  create_table "teams" do |t|
+    t.string "name", null: false
+  end
+
   create_table "users" do |t|
     t.string "email"
     t.integer "referrer_id"
-    t.datetime "created_at"
-    t.datetime "updated_at"
+    t.integer "group_id"
+    t.timestamps null: false
   end
 
   add_foreign_key(:users, :users, :column => 'referrer_id')
 
   create_table "contracts" do |t|
     t.integer "user_id", :null => false
+    t.integer "contract_type_id"
+    t.string "title"
+  end
+
+  create_table "contract_types" do |t|
+    t.string "name", :null => false
   end
 
   create_table "referral_hierarchies", :id => false do |t|
@@ -111,6 +131,7 @@ ActiveRecord::Schema.define(:version => 0) do
     t.integer "parent_id"
     t.string "metal_type"
     t.string "value"
+    t.string "description"
     t.integer "sort_order"
   end
 
@@ -128,7 +149,7 @@ ActiveRecord::Schema.define(:version => 0) do
   create_table 'menu_items' do |t|
     t.string 'name'
     t.integer 'parent_id'
-    t.timestamps
+    t.timestamps null: false
   end
 
   add_foreign_key(:menu_items, :menu_items, :column => 'parent_id')

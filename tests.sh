@@ -1,13 +1,11 @@
 #!/bin/sh -ex
 
-appraisal install
-
-for RMI in 1.9.3-p429 2.1.2
+for RMI in 2.3.1 #jruby-1.6.13 :P
 do
   rbenv local $RMI
-  for db in postgresql mysql sqlite
+  appraisal bundle install
+  for DB in mysql sqlite postgresql
   do
-    bundle install --quiet
-    DB=$db WITH_ADVISORY_LOCK_PREFIX=$(date +%s) appraisal rake all_spec_flavors
+    appraisal rake spec:all WITH_ADVISORY_LOCK_PREFIX=$(date +%s) DB=$DB
   done
 done

@@ -1,23 +1,25 @@
 database_folder = "#{File.dirname(__FILE__)}/../db"
-database_adapter = ENV['DB'] ||= 'mysql'
+database_adapter = ENV['DB'] ||= 'postgresql'
 
-if ENV['STDOUT_LOGGING']
-  log = Logger.new(STDOUT)
-  log.sev_threshold = Logger::DEBUG
-  ActiveRecord::Base.logger = log
+def sqlite?
+  ENV['DB'] == 'sqlite'
 end
+
+log = Logger.new('db.log')
+log.sev_threshold = Logger::DEBUG
+ActiveRecord::Base.logger = log
 
 ActiveRecord::Migration.verbose = false
 ActiveRecord::Base.table_name_prefix = ENV['DB_PREFIX'].to_s
 ActiveRecord::Base.table_name_suffix = ENV['DB_SUFFIX'].to_s
+
+def db_name
+  @db_name ||= "closure_tree_test_#{rand(1..2**31)}"
+end
+
 ActiveRecord::Base.configurations = YAML::load(ERB.new(IO.read("#{database_folder}/database.yml")).result)
 
 config = ActiveRecord::Base.configurations[database_adapter]
-
-unless config['database'] == ':memory:'
-  # Postgresql or Mysql
-  config['database'].concat ENV['TRAVIS_JOB_NUMBER'].to_s.gsub(/\W/, '_')
-end
 
 begin
   case database_adapter
@@ -33,7 +35,8 @@ begin
 end unless ENV['NONUKES']
 
 ActiveRecord::Base.establish_connection(config)
-Foreigner.load
+# Drop this when support for ActiveRecord 4.1 is removed
+Foreigner.load if defined?(Foreigner)
 
 require "#{database_folder}/schema"
 require "#{database_folder}/models"
@@ -42,8 +45,8 @@ require "#{database_folder}/models"
 def count_queries(&block)
   count = 0
   counter_fn = ->(name, started, finished, unique_id, payload) do
-    count += 1 unless payload[:name].in? %w[ CACHE SCHEMA ]
+    count += 1 unless %w[CACHE SCHEMA].include? payload[:name]
   end
-  ActiveSupport::Notifications.subscribed(counter_fn, "sql.active_record", &block)
+  ActiveSupport::Notifications.subscribed(counter_fn, 'sql.active_record', &block)
   count
 end

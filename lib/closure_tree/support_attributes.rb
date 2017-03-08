@@ -1,17 +1,11 @@
 require 'forwardable'
 module ClosureTree
   module SupportAttributes
-
     extend Forwardable
-    def_delegators :model_class, :connection, :transaction, :table_name
+    def_delegators :model_class, :connection, :transaction, :table_name, :base_class, :inheritance_column, :column_names
 
-    # This is the "topmost" class. This will only potentially not be ct_class if you are using STI.
-    def base_class
-      options[:base_class]
-    end
-
-    def attribute_names
-      @attribute_names ||= model_class.new.attributes.keys - model_class.protected_attributes.to_a
+    def advisory_lock_name
+      Digest::SHA1.hexdigest("ClosureTree::#{base_class.name}")[0..32]
     end
 
     def quoted_table_name
@@ -24,6 +18,14 @@ module ClosureTree
 
     def hierarchy_class_name
       options[:hierarchy_class_name] || model_class.to_s + "Hierarchy"
+    end
+
+    def primary_key_column
+      model_class.columns.detect { |ea| ea.name == model_class.primary_key }
+    end
+
+    def primary_key_type
+      primary_key_column.type
     end
 
     def parent_column_name

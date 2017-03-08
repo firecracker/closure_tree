@@ -1,19 +1,15 @@
-require 'with_advisory_lock'
-
 module ClosureTree
-  module ActsAsTree
-    def acts_as_tree(options = {})
+  module HasClosureTree
+    def has_closure_tree(options = {})
       options.assert_valid_keys(
-        :base_class,
+        :parent_column_name,
         :dependent,
         :hierarchy_class_name,
         :hierarchy_table_name,
-        :name,
         :name_column,
         :order,
-        :parent_column_name,
-        :with_advisory_lock,
-        :touch
+        :touch,
+        :with_advisory_lock
       )
 
       class_attribute :_ct
@@ -34,8 +30,9 @@ module ClosureTree
       include ClosureTree::DeterministicOrdering if _ct.order_option?
       include ClosureTree::NumericDeterministicOrdering if _ct.order_is_numeric?
     rescue StandardError => e
-      # Support Heroku's database-less assets:precompile pre-deploy step:
-      raise e unless ENV['DATABASE_URL'].to_s.include?('//user:pass@127.0.0.1/') && ENV['RAILS_GROUPS'] == 'assets'
+      raise e unless ClosureTree.configuration.database_less
     end
+
+    alias_method :acts_as_tree, :has_closure_tree
   end
 end

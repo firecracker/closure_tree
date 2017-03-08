@@ -8,27 +8,24 @@ Gem::Specification.new do |gem|
   gem.email       = ['matthew-github@mceachen.org']
   gem.homepage    = 'http://mceachen.github.io/closure_tree/'
 
-  gem.summary = %q(Easily and efficiently make your ActiveRecord model support hierarchies)
+  gem.summary     = %q(Easily and efficiently make your ActiveRecord model support hierarchies)
   gem.description = gem.summary
-  gem.license = 'MIT'
+  gem.license     = 'MIT'
 
-  gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR)
-  gem.test_files    = gem.files.grep(%r{^spec/})
-  gem.required_ruby_version     = '>= 1.9.3'
+  gem.files       = `git ls-files`.split($INPUT_RECORD_SEPARATOR)
+  gem.test_files  = gem.files.grep(%r{^spec/})
+  gem.required_ruby_version = '>= 2.0.0'
 
-  gem.add_runtime_dependency 'activerecord', '>= 3.2.0'
-  gem.add_runtime_dependency 'with_advisory_lock', '>= 0.0.9' # <- to prevent duplicate roots
+  gem.add_runtime_dependency 'activerecord', '>= 4.1.0'
+  gem.add_runtime_dependency 'with_advisory_lock', '>= 3.0.0'
 
-  gem.add_development_dependency 'rake'
-  gem.add_development_dependency 'yard'
-  gem.add_development_dependency 'rspec', '~> 2.14.0' # FIXME: migrate to rspec 3 (or, better, ditch rspec and switch to minitest)
   gem.add_development_dependency 'rspec-instafail'
-  gem.add_development_dependency 'rspec-rails' # FIXME: for rspec-rails and rspec fixture support
-  gem.add_development_dependency 'uuidtools'
+  gem.add_development_dependency 'rspec-rails'
   gem.add_development_dependency 'database_cleaner'
   gem.add_development_dependency 'appraisal'
   gem.add_development_dependency 'timecop'
-
+  gem.add_development_dependency 'parallel'
+  # gem.add_development_dependency 'ammeter', '1.1.2' # See https://github.com/mceachen/closure_tree/issues/181
+  # gem.add_development_dependency 'byebug'
   # gem.add_development_dependency 'ruby-prof' # <- don't need this normally.
-
 end

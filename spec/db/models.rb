@@ -1,9 +1,6 @@
-require 'uuidtools'
-
 class Tag < ActiveRecord::Base
-  acts_as_tree :dependent => :destroy, :order => :name
+  has_closure_tree :dependent => :destroy, :order => :name
   before_destroy :add_destroyed_tag
-  attr_accessible :name, :title if _ct.use_attr_accessible?
 
   def to_s
     name
@@ -18,12 +15,11 @@ end
 class UUIDTag < ActiveRecord::Base
   self.primary_key = :uuid
   before_create :set_uuid
-  acts_as_tree :dependent => :destroy, :order => 'name', :parent_column_name => 'parent_uuid'
+  has_closure_tree dependent: :destroy, order: 'name', parent_column_name: 'parent_uuid'
   before_destroy :add_destroyed_tag
-  attr_accessible :name, :title if _ct.use_attr_accessible?
 
   def set_uuid
-    self.uuid = UUIDTools::UUID.timestamp_create.to_s
+    self.uuid = SecureRandom.uuid
   end
 
   def to_s
@@ -37,7 +33,22 @@ class UUIDTag < ActiveRecord::Base
 end
 
 class DestroyedTag < ActiveRecord::Base
-  attr_accessible :name if Tag._ct.use_attr_accessible?
+end
+
+class Group < ActiveRecord::Base
+  has_closure_tree_root :root_user
+end
+
+class Grouping < ActiveRecord::Base
+  has_closure_tree_root :root_person, class_name: "User", foreign_key: :group_id
+end
+
+class UserSet < ActiveRecord::Base
+  has_closure_tree_root :root_user, class_name: "Useur"
+end
+
+class Team < ActiveRecord::Base
+  has_closure_tree_root :root_user, class_name: "User", foreign_key: :grp_id
 end
 
 class User < ActiveRecord::Base
@@ -46,13 +57,12 @@ class User < ActiveRecord::Base
     :hierarchy_class_name => 'ReferralHierarchy',
     :hierarchy_table_name => 'referral_hierarchies'
 
-  has_many :contracts
+  has_many :contracts, inverse_of: :user
+  belongs_to :group # Can't use and don't need inverse_of here when using has_closure_tree_root.
 
   def indirect_contracts
     Contract.where(:user_id => descendant_ids)
   end
-
-  attr_accessible :email, :referrer if _ct.use_attr_accessible?
 
   def to_s
     email
@@ -60,7 +70,12 @@ class User < ActiveRecord::Base
 end
 
 class Contract < ActiveRecord::Base
-  belongs_to :user
+  belongs_to :user, inverse_of: :contracts
+  belongs_to :contract_type, inverse_of: :contracts
+end
+
+class ContractType < ActiveRecord::Base
+  has_many :contracts, inverse_of: :contract_type
 end
 
 class Label < ActiveRecord::Base
@@ -68,8 +83,6 @@ class Label < ActiveRecord::Base
   acts_as_tree :order => :column_whereby_ordering_is_inferred, # <- symbol, and not "sort_order"
     :parent_column_name => "mother_id",
     :dependent => :destroy
-
-  attr_accessible :name if _ct.use_attr_accessible?
 
   def to_s
     "#{self.class}: #{name}"
@@ -90,18 +103,26 @@ class CuisineType < ActiveRecord::Base
 end
 
 module Namespace
+  def self.table_name_prefix
+    'namespace_'
+  end
   class Type < ActiveRecord::Base
-    acts_as_tree :dependent => :destroy
-    attr_accessible :name if _ct.use_attr_accessible?
+    has_closure_tree dependent: :destroy
   end
 end
 
 class Metal < ActiveRecord::Base
   self.table_name = "#{table_name_prefix}metal#{table_name_suffix}"
-  acts_as_tree :order => 'sort_order'
+  has_closure_tree order: 'sort_order', name_column: 'value'
   self.inheritance_column = 'metal_type'
 end
 
+class Adamantium < Metal
+end
+
+class Unobtanium < Metal
+end
+
 class MenuItem < ActiveRecord::Base
-  acts_as_tree(touch: true, with_advisory_lock: false)
+  has_closure_tree touch: true, with_advisory_lock: false
 end

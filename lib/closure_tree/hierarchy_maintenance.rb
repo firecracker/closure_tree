@@ -25,7 +25,7 @@ module ClosureTree
         changes[_ct.parent_column_name] && # don't validate for cycles if we didn't change our parent
         parent.present? && # don't validate if we're root
         parent.self_and_ancestors.include?(self) # < this is expensive :\
-        errors.add(_ct.parent_column_sym, "You cannot add an ancestor as a descendant")
+        errors.add(_ct.parent_column_sym, I18n.t('closure_tree.loop_error', default: 'You cannot add an ancestor as a descendant'))
       end
     end
 
@@ -36,7 +36,7 @@ module ClosureTree
 
     def _ct_after_save
       if changes[_ct.parent_column_name] || @was_new_record
-        rebuild! unless @_ct_skip_hierarchy_maintenance
+        rebuild!
       end
       if changes[_ct.parent_column_name] && !@was_new_record
         # Resetting the ancestral collections addresses
@@ -98,8 +98,8 @@ module ClosureTree
             FROM (SELECT descendant_id
               FROM #{_ct.quoted_hierarchy_table_name}
               WHERE ancestor_id = #{_ct.quote(id)}
+                 OR descendant_id = #{_ct.quote(id)}
             ) AS x )
-            OR descendant_id = #{_ct.quote(id)}
         SQL
       end
     end

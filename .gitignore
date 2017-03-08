@@ -1,4 +1,5 @@
 .bundle/
+.history/
 .idea/
 pkg/
 rdoc/
@@ -10,3 +11,5 @@ tmp/
 .yardoc/
 .rvmrc
 *.lock
+tmp/
+.ruby-*

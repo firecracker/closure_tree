@@ -2,9 +2,7 @@
 
 source "https://rubygems.org"
 
-gem "foreigner", :git => "https://github.com/mceachen/foreigner.git"
-gem "activerecord", "~> 3.2"
-gem "strong_parameters"
+gem "activerecord", "~> 4.2.0"
 
 platforms :ruby, :rbx do
   gem "mysql2"

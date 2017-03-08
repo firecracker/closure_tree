@@ -36,6 +36,7 @@ module ClosureTree
         else
           ""
         end
+
         connection.execute <<-SQL.strip_heredoc
           UPDATE #{quoted_table_name}
           SET #{quoted_order_column(false)} = t.seq + #{minimum_sort_order_value.to_i - 1}

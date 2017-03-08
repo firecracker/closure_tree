@@ -10,6 +10,12 @@ module ClosureTree
 
     # Find or create a descendant node whose +ancestry_path+ will be ```self.ancestry_path + path```
     def find_or_create_by_path(path, attributes = {})
+      _ct.with_table_lock do
+        find_or_create_by_path_without_lock(path, attributes)
+      end
+    end
+
+    def find_or_create_by_path_without_lock(path, attributes = {})
       subpath = _ct.build_ancestry_attr_path(path, attributes)
       return self if subpath.empty?
 
@@ -17,7 +23,6 @@ module ClosureTree
       return found if found
 
       attrs = subpath.shift
-      _ct.with_advisory_lock do
         # shenanigans because children.create is bound to the superclass
         # (in the case of polymorphism):
         child = self.children.where(attrs).first || begin
@@ -28,10 +33,11 @@ module ClosureTree
             ea._ct_skip_cycle_detection!
             self.children << ea
           end
-        end
-        child.find_or_create_by_path(subpath, attributes)
       end
+        child.find_or_create_by_path_without_lock(subpath, attributes)
     end
+
+
 
     def find_all_by_generation(generation_level)
       s = _ct.base_class.joins(<<-SQL.strip_heredoc)

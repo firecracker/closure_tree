@@ -50,8 +50,8 @@ module ClosureTree
     end
 
     def _ct_before_destroy
-      _ct.with_advisory_lock do
-        delete_hierarchy_references
+      _ct.with_table_lock do
+        delete_hierarchy_references_without_lock
         if _ct.options[:dependent] == :nullify
           self.class.find(self.id).children.each { |c| c.rebuild! }
         end
@@ -59,9 +59,14 @@ module ClosureTree
       true # don't prevent destruction
     end
 
-    def rebuild!(called_by_rebuild = false)
-      _ct.with_advisory_lock do
-        delete_hierarchy_references unless @was_new_record
+    def rebuild!
+      _ct.with_table_lock do
+         rebuild_without_lock!
+      end
+    end
+
+    def rebuild_without_lock!(called_by_rebuild = false)
+        delete_hierarchy_references_without_lock unless @was_new_record
         hierarchy_class.create!(:ancestor => self, :descendant => self, :generations => 0)
         unless root?
           _ct.connection.execute <<-SQL.strip_heredoc
@@ -72,21 +77,19 @@ module ClosureTree
             WHERE x.descendant_id = #{_ct.quote(_ct_parent_id)}
           SQL
         end
-
         if _ct.order_is_numeric? && !@_ct_skip_sort_order_maintenance
           _ct_reorder_prior_siblings_if_parent_changed
           # Prevent double-reordering of siblings:
           _ct_reorder_siblings if !called_by_rebuild
         end
 
-        children.each { |c| c.rebuild!(true) }
+
+        children.each { |c| c.rebuild_without_lock!(true) }
 
         _ct_reorder_children if _ct.order_is_numeric? && children.present?
-      end
     end
 
-    def delete_hierarchy_references
-      _ct.with_advisory_lock do
+    def delete_hierarchy_references_without_lock
         # The crazy double-wrapped sub-subselect works around MySQL's limitation of subselects on the same table that is being mutated.
         # It shouldn't affect performance of postgresql.
         # See http://dev.mysql.com/doc/refman/5.0/en/subquery-errors.html
@@ -101,6 +104,11 @@ module ClosureTree
                  OR descendant_id = #{_ct.quote(id)}
             ) AS x )
         SQL
+    end
+
+    def delete_hierarchy_references
+      _ct.with_table_lock do
+       delete_hierarchy_references_without_lock
       end
     end
 
@@ -108,9 +116,9 @@ module ClosureTree
       # Rebuilds the hierarchy table based on the parent_id column in the database.
       # Note that the hierarchy table will be truncated.
       def rebuild!
-        _ct.with_advisory_lock do
+        _ct.with_table_lock do
           hierarchy_class.delete_all # not destroy_all -- we just want a simple truncate.
-          roots.each { |n| n.send(:rebuild!) } # roots just uses the parent_id column, so this is safe.
+          roots.each { |n| n.send(:rebuild_without_lock!) } # roots just uses the parent_id column, so this is safe.
         end
         nil
       end

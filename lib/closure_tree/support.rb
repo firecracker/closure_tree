@@ -102,6 +102,19 @@ module ClosureTree
       end
     end
 
+    def with_table_lock(&block)
+      if options[:with_advisory_lock]
+        model_class.transaction do
+            ActiveRecord::Base.connection.execute("LOCK tags IN ACCESS EXCLUSIVE MODE")
+            ActiveRecord::Base.connection.execute('LOCK tag_hierarchies IN ACCESS EXCLUSIVE MODE')
+            yield
+        end
+      else
+        yield
+      end
+    end
+
+
     def with_advisory_lock(&block)
       if options[:with_advisory_lock]
         model_class.with_advisory_lock(advisory_lock_name) do
